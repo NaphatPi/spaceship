@@ -8,14 +8,22 @@ example_pkg = ["*.json"]
 
 [project]
 name = "spaceship"
-authors = [{ name = "NolanP", email = "naphat.piphattanakarn@gmail.com" }]
+authors = [
+    { name = "Nolan Piphattanakarn", email = "naphat.piphattanakarn@gmail.com" },
+]
 description = "Package description"
 readme = "README.md"
 requires-python = ">=3.7"
 keywords = ["one", "two"]
 license = { text = "MIT" }
 classifiers = ["Programming Language :: Python :: 3"]
-dependencies = ['importlib-metadata; python_version<"3.8"']
+dependencies = [
+    'importlib-metadata; python_version<"3.8"',
+    "pandas==2.2",
+    "pandera==0.20",
+    "pyarrow==17.0.0",
+    "pydantic==2.9.1",
+]
 dynamic = ["version"]
 
 [project.optional-dependencies]
@@ -33,7 +41,7 @@ version = { file = "version.txt" }
 
 [tool.black]
 line-length = 119
-exclude = ["venv"]
+exclude = "venv"
 
 [tool.flake8]
 docstring-convention = "all"
