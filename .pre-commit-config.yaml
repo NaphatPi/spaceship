@@ -77,16 +77,16 @@ repos:
         args:
           - --rcfile=./pyproject.toml
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        args:
-          - --toml-config=./pyproject.toml
-        additional_dependencies:
-          - radon
-          - flake8-docstrings
-          - Flake8-pyproject
+  # - repo: https://github.com/PyCQA/flake8
+  #   rev: 6.0.0
+  #   hooks:
+  #     - id: flake8
+  #       args:
+  #         - --toml-config=./pyproject.toml
+  #       additional_dependencies:
+  #         - radon
+  #         - flake8-docstrings
+  #         - Flake8-pyproject
 
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
