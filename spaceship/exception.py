@@ -1,9 +1,13 @@
-"""Exception module"""
+"""Module containing exceptions"""
+
+
+class DatasetAlreadyExists(Exception):
+    """Dataset or directory with the same name already exists"""
 
 
 class DatasetNotFound(Exception):
-    """Dataset not found in the current location"""
+    """Dataset not found"""
 
 
-class MetadataNotFound(Exception):
-    """Dataset metadata not found"""
+class DatasetNameNotAllowed(Exception):
+    """Table name given is invalid. Only alphanumeric with - or _ are allowed"""
