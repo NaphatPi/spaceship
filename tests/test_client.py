@@ -1,7 +1,6 @@
 """Testing Client module"""
 
 from pathlib import Path
-from test.test_super import D
 
 import pandas as pd
 import pyarrow as pa
