@@ -11,14 +11,14 @@ name = "spaceship"
 authors = [
     { name = "Nolan Piphattanakarn", email = "naphat.piphattanakarn@gmail.com" },
 ]
-description = "Package description"
+description = "Spaceship is a data transport package that allow creating datasets, sending data to a dataset or query from it"
 readme = "README.md"
 requires-python = ">=3.10"
-keywords = ["one", "two"]
+keywords = []
 license = { text = "MIT" }
 classifiers = ["Programming Language :: Python :: 3"]
 dependencies = [
-    "pandas~=2.2",
+    "pandas==2.2.3",
     "pyarrow==17.0.0",
     "duckdb==1.1.1",
     "deltalake==0.20.1",
