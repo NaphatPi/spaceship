@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
+import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.fs
 from deltalake import (
@@ -22,6 +23,10 @@ from spaceship.exception import (
     DatasetNotFound,
 )
 from spaceship.metadata import DatasetMetadata
+from spaceship.utils import (
+    compare_data_with_metadata,
+    validate_input_data_type,
+)
 
 # This is to allow working with S3 storage back end without locking mechanism
 os.environ["AWS_S3_ALLOW_UNSAFE_RENAME"] = "true"
@@ -60,6 +65,8 @@ class Client:
             constraints (dict[str, str] | None, optional): Constraints to apply to the dataset. Defaults to None.
             bucket_name (str | None, optional): The name of the S3 bucket. Defaults to None.
             partition_columns (list[str] | str | None, optional): Columns to partition the dataset by. Defaults to None.
+                If partition_columns is not provided, the default, load_parition_date, will be used, which is the date
+                the data is loaded into the dataset.
 
         Raises:
             DatasetAlreadyExists: If the dataset or directory already exists.
@@ -74,6 +81,10 @@ class Client:
         storage_options = self._get_storage_option() if bucket_name else None
         table_name = self._validate_table_name(Path(name_or_path).stem)
         delta_table_path = self._get_table_uri(name_or_path, bucket_name)
+
+        if not partition_columns:
+            partition_columns = ["load_partition_date"]
+            schema = schema.append(pa.field("load_partition_date", pa.date32()))
 
         try:
             dt = DeltaTable.create(
@@ -220,10 +231,13 @@ class Client:
         )
 
     def append(
-        self, data: pd.DataFrame | ds.Dataset, dataset_name_or_path: str, bucket_name: str | None = None
+        self, data: pd.DataFrame | pa.Table | ds.Dataset, dataset_name_or_path: str, bucket_name: str | None = None
     ) -> None:
         """Append new data to an existing dataset"""
-        self.get_dataset(dataset_name_or_path, bucket_name)
+        # check if data is of the correct type as in function signature
+        data = validate_input_data_type(data)
+        metadata = self.get_dataset_metadata(dataset_name_or_path, bucket_name)
+        data = compare_data_with_metadata(data, metadata)
         write_deltalake(
             self._get_table_uri(dataset_name_or_path, bucket_name),
             data,

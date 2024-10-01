@@ -1,5 +1,6 @@
 """Testing Client module"""
 
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +10,7 @@ from deltalake import (
     DeltaTable,
     Schema,
 )
+from freezegun import freeze_time
 
 from spaceship.client import Client
 from spaceship.exception import (
@@ -153,6 +155,7 @@ def test_dataset_metadata(client: Client, tmp_path: Path):
     assert metadata.description == description
     assert metadata.schema == Schema.from_pyarrow(schema)
     assert metadata.constraints == constraints
+    assert metadata.created_date.date() == datetime.now().date()
     assert metadata.partition_columns == partition_columns
 
 
@@ -171,6 +174,7 @@ def test_append_data(client: Client, tmp_path: Path):
         mode="error",
         partition_by=["date"],
     )
+
     dtypes = {"id": "int64[pyarrow]", "date": "date32[pyarrow]", "name": "string[pyarrow]"}
 
     df1 = pd.DataFrame(
@@ -180,7 +184,6 @@ def test_append_data(client: Client, tmp_path: Path):
             "name": ["Alice", "Bob", "Charlie"],
         }
     ).astype(dtypes)
-
     df2 = pd.DataFrame(
         {
             "id": [4, 5, 6],
@@ -202,3 +205,47 @@ def test_append_data(client: Client, tmp_path: Path):
         .reset_index(drop=True)
         .equals(DeltaTable(str(tmp_path / name)).to_pandas().sort_values("id").reset_index(drop=True).astype(dtypes))
     )
+
+
+def test_create_dataset_with_default_partition_column(client: Client, tmp_path: Path):
+    """Test creating a dataset"""
+    dataset_path = str(tmp_path / "test_dataset")
+    client.create_dataset(
+        dataset_path,
+        schema=pa.schema([("id", pa.int64()), ("date", pa.date32()), ("name", pa.string())]),
+        description="test dataset",
+        constraints={
+            "id_not_null": "id IS NOT NULL",
+        },
+    )
+    metadata = client.get_dataset_metadata(dataset_path)
+    assert metadata.partition_columns == ["load_partition_date"]
+
+
+@freeze_time("2024-01-14")
+def append_data_to_dataset_with_default_partition(client: Client, tmp_path: Path):
+    """Testing if appending data to dataset with default partition column will have load partition date column"""
+    dataset_path = str(tmp_path / "test_dataset")
+    client.create_dataset(
+        str(dataset_path),
+        schema=pa.schema([("id", pa.int64()), ("date", pa.date32()), ("name", pa.string())]),
+        description="test dataset",
+        constraints={
+            "id_not_null": "id IS NOT NULL",
+        },
+    )
+    dtypes = {"id": "int64[pyarrow]", "date": "date32[pyarrow]", "name": "string[pyarrow]"}
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "date": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"]),
+            "name": ["Alice", "Bob", "Charlie"],
+        }
+    ).astype(dtypes)
+
+    client.append(df, dataset_path)
+
+    new_data = DeltaTable(dataset_path).to_pandas()
+    assert "load_partition_date" in new_data.columns
+    assert len(new_data.load_partition_date.unique()) == 1
+    assert new_data.load_partition_date[0] == datetime.now().date()

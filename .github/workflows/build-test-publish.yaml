@@ -78,7 +78,8 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-cov ./dist/*.whl
+          pip install .[test]
+          pip install ./dist/*.whl
       - name: Run tests
         run: |
           /bin/bash -x run.sh test:ci
@@ -117,6 +118,7 @@ jobs:
       #     PROD_PYPI_TOKEN: ${{ secrets.PROD_PYPI_TOKEN }}
       - name: Push tags
         run: |
+          git tag $(cat version.txt)
           git push origin --tags
 
   # https://docs.github.com/en/actions/learn-github-actions/contexts#example-printing-context-information-to-the-log
