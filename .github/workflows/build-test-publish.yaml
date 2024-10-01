@@ -78,7 +78,8 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install .['test'] ./dist/*.whl
+          pip install .[test]
+          pip install ./dist/*.whl
       - name: Run tests
         run: |
           /bin/bash -x run.sh test:ci
