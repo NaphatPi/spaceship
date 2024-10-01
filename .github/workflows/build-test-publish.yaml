@@ -78,7 +78,7 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-cov ./dist/*.whl
+          pip install .['test'] ./dist/*.whl
       - name: Run tests
         run: |
           /bin/bash -x run.sh test:ci
