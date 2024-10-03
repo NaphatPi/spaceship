@@ -26,6 +26,9 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[tool.setuptools]
+packages = ["spaceship"]
+
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "freezegun"]
 release = ["build", "twine"]
