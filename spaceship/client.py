@@ -23,6 +23,10 @@ from spaceship.exception import (
     DatasetNotFound,
 )
 from spaceship.metadata import DatasetMetadata
+from spaceship.query import (
+    DuckDBQueryExecutor,
+    QueryExecutor,
+)
 from spaceship.utils import (
     compare_data_with_metadata,
     validate_input_data_type,
@@ -40,11 +44,20 @@ logger.addHandler(logging.NullHandler())
 class Client:
     """Spaceship Client class"""
 
-    def __init__(self, *, access_key=None, secret_key=None, region="nyc3", endpoint="digitaloceanspaces.com"):
+    def __init__(
+        self,
+        *,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        region: str | None = "nyc3",
+        endpoint: str | None = "digitaloceanspaces.com",
+        query_executor: QueryExecutor | None = None,
+    ):
         self.access_key = access_key or os.getenv("ACCESS_KEY")
         self.secret_key = secret_key or os.getenv("SECRET_KEY")
         self.region = region
         self.endpoint = endpoint
+        self._query_executor = query_executor
 
     def create_dataset(
         self,
@@ -79,7 +92,7 @@ class Client:
             raise DatasetAlreadyExists(f"Dataset or directory {name_or_path} already exists")
 
         storage_options = self._get_storage_option() if bucket_name else None
-        table_name = self._validate_table_name(Path(name_or_path).stem)
+        table_name = _validate_table_name(Path(name_or_path).stem)
         delta_table_path = self._get_table_uri(name_or_path, bucket_name)
 
         if not partition_columns:
@@ -113,25 +126,6 @@ class Client:
             "secret_access_key": self.secret_key,
             "endpoint": f"https://{self.region}.{self.endpoint}",
         }
-
-    @staticmethod
-    def _validate_table_name(table_name: str) -> str:
-        """
-        Validates a table name. Table name can be alphanumeric and must not contain special characters
-        except for - or _, also no space allowed.
-
-        Args:
-            table_name (str): The table name to validate.
-
-        Returns:
-            Original string if valid or raises DatasetNameNotAllowed
-        """
-        pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
-        if not pattern.match(table_name):
-            raise DatasetNameNotAllowed(
-                f"Table name '{table_name}' is not allowed. It must be alphanumeric and can contain only '-' or '_'."
-            )
-        return table_name
 
     def _get_arrow_fs(self, mode: Literal["local", "s3"]):
         """Get Arrow FileSystem object"""
@@ -185,7 +179,9 @@ class Client:
             return f"s3://{bucket_name}/{name_or_path}/"
         return name_or_path
 
-    def get_dataset(self, name_or_path: str, bucket_name: str | None = None) -> DeltaTable:
+    def get_dataset(
+        self, name_or_path: str, bucket_name: str | None = None, version: int | str | datetime | None = None
+    ) -> DeltaTable:
         """Get dataset as DeltaTable or raise DatasetNotFound error"""
         storage_options = self._get_storage_option() if bucket_name else None
         delta_table_path = self._get_table_uri(name_or_path, bucket_name)
@@ -195,7 +191,12 @@ class Client:
                 f"Dataset {name_or_path} not found at {delta_table_path if bucket_name else os.path.abspath(delta_table_path)}"
             )
 
-        return DeltaTable(delta_table_path, storage_options=storage_options)
+        dt = DeltaTable(delta_table_path, storage_options=storage_options)
+
+        if version is not None:
+            dt.load_as_version(version)
+
+        return dt
 
     def list_datasets(self, dir_path: str | None = None, bucket_name: str | None = None) -> list[str]:
         """List all dataset names. If dir_path or bucket_name not provided, this will check
@@ -244,3 +245,34 @@ class Client:
             storage_options=self._get_storage_option() if bucket_name else None,
             mode="append",
         )
+
+    def query(self, query: str, **kwargs):
+        """Run query string using a query executor. At the moment only duckDB is supported."""
+        if self._query_executor is None:
+            self._query_executor = DuckDBQueryExecutor(
+                self.access_key,
+                self.secret_key,
+                self.region,
+                self.endpoint,
+            )
+
+        return self._query_executor.execute(query, **kwargs)
+
+
+def _validate_table_name(table_name: str) -> str:
+    """
+    Validates a table name. Table name can be alphanumeric and must not contain special characters
+    except for - or _, also no space allowed.
+
+    Args:
+        table_name (str): The table name to validate.
+
+    Returns:
+        Original string if valid or raises DatasetNameNotAllowed
+    """
+    pattern = re.compile(r"^[a-zA-Z0-9_-]+$")
+    if not pattern.match(table_name):
+        raise DatasetNameNotAllowed(
+            f"Table name '{table_name}' is not allowed. It must be alphanumeric and can contain only '-' or '_'."
+        )
+    return table_name
