@@ -8,4 +8,4 @@ ROOT_DIR = THIS_DIR.parent
 
 sys.path.insert(0, str(ROOT_DIR))
 
-pytest_plugins = ["tests.fixtures.example_fixture"]
+pytest_plugins = ["tests.fixtures.fixture"]

@@ -22,8 +22,12 @@ dependencies = [
     "pyarrow==17.0.0",
     "duckdb==1.1.1",
     "deltalake==0.20.1",
+    "sqlglot==25.24.1",
 ]
 dynamic = ["version"]
+
+[tool.setuptools]
+packages = ["spaceship"]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov", "freezegun"]

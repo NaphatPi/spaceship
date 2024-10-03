@@ -2,6 +2,10 @@
 
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pandas as pd
 import pyarrow as pa
@@ -9,6 +13,7 @@ import pytest
 from deltalake import (
     DeltaTable,
     Schema,
+    write_deltalake,
 )
 from freezegun import freeze_time
 
@@ -21,14 +26,24 @@ from spaceship.exception import (
 
 
 def create_tmp_dataset(path: str) -> DeltaTable:
-    """Create a tmp deltatable"""
-    return DeltaTable.create(
+    """Create a tmp deltatable with some dummy data"""
+    DeltaTable.create(
         table_uri=path,
         schema=pa.schema([("id", pa.int64()), ("date", pa.date32()), ("name", pa.string())]),
         description="Some description",
         mode="error",
         partition_by=["date"],
     )
+    dtypes = {"id": "int64[pyarrow]", "date": "date32[pyarrow]", "name": "string[pyarrow]"}
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "date": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"]),
+            "name": ["Alice", "Bob", "Charlie"],
+        }
+    ).astype(dtypes)
+    write_deltalake(path, df, mode="append")
+    return DeltaTable(path)
 
 
 def test_create_dataset_locally(client: Client, tmp_path: Path):
@@ -99,8 +114,7 @@ def test_get_existing_dataset(client: Client, tmp_path: Path):
     table_path = str(tmp_path / "tmp_table")
     dt1 = create_tmp_dataset(table_path)
     dt2 = client.get_dataset(table_path)
-
-    assert dt1 == dt2
+    assert dt1.to_pandas().equals(dt2.to_pandas())
 
 
 def test_get_not_existing_dataset(client: Client, tmp_path: Path):
@@ -223,7 +237,7 @@ def test_create_dataset_with_default_partition_column(client: Client, tmp_path: 
 
 
 @freeze_time("2024-01-14")
-def append_data_to_dataset_with_default_partition(client: Client, tmp_path: Path):
+def test_append_data_to_dataset_with_default_partition(client: Client, tmp_path: Path):
     """Testing if appending data to dataset with default partition column will have load partition date column"""
     dataset_path = str(tmp_path / "test_dataset")
     client.create_dataset(
@@ -249,3 +263,15 @@ def append_data_to_dataset_with_default_partition(client: Client, tmp_path: Path
     assert "load_partition_date" in new_data.columns
     assert len(new_data.load_partition_date.unique()) == 1
     assert new_data.load_partition_date[0] == datetime.now().date()
+
+
+def test_query(client: Client):
+    """Test running query"""
+    with patch("duckdb.connect") as mock_connect:
+        mock_conn = MagicMock()
+        # Set up the mock to return the mock connection
+        mock_connect.return_value = mock_conn
+        # Set to None for now and we don't want to use this
+        mock_conn.execute.return_value = 123
+
+        assert client.query("SELECT * FROM my_table") == 123

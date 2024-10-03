@@ -17,4 +17,6 @@ def session_id() -> str:
 @pytest.fixture(scope="session")
 def client() -> Client:
     """Local client fixture"""
-    return Client()
+    return Client(
+        access_key="test_access_key", secret_key="test_secret_key", region="test_region", endpoint="test_endpoint"
+    )
