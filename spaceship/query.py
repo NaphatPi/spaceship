@@ -50,7 +50,7 @@ class DuckDBQueryExecutor(QueryExecutor):
                 KEY_ID '{access_key or os.getenv("ACCESS_KEY")}',
                 SECRET '{secret_key or os.getenv("SECRET_KEY")}',
                 REGION '{region}',
-                ENDPOINT '{endpoint}'
+                ENDPOINT '{region}.{endpoint}'
             );
         """
         )
