@@ -15,3 +15,7 @@ class DatasetNameNotAllowed(Exception):
 
 class AmbiguousSourceTable(Exception):
     """Source table pattern in the SQL statement is ambiguous"""
+
+
+class RestorationError(Exception):
+    """Failed to restore deltatable to a specific version"""

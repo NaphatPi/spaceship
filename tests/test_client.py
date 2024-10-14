@@ -1,9 +1,12 @@
 """Testing Client module"""
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from pathlib import Path
 from unittest.mock import (
-    MagicMock,
+    Mock,
     patch,
 )
 
@@ -15,7 +18,6 @@ from deltalake import (
     Schema,
     write_deltalake,
 )
-from freezegun import freeze_time
 
 from spaceship.client import Client
 from spaceship.exception import (
@@ -23,6 +25,7 @@ from spaceship.exception import (
     DatasetNameNotAllowed,
     DatasetNotFound,
 )
+from spaceship.query import FutureDatasetRef
 
 
 def create_tmp_dataset(path: str) -> DeltaTable:
@@ -236,7 +239,6 @@ def test_create_dataset_with_default_partition_column(client: Client, tmp_path: 
     assert metadata.partition_columns == ["load_partition_date"]
 
 
-@freeze_time("2024-01-14")
 def test_append_data_to_dataset_with_default_partition(client: Client, tmp_path: Path):
     """Testing if appending data to dataset with default partition column will have load partition date column"""
     dataset_path = str(tmp_path / "test_dataset")
@@ -262,16 +264,36 @@ def test_append_data_to_dataset_with_default_partition(client: Client, tmp_path:
     new_data = DeltaTable(dataset_path).to_pandas()
     assert "load_partition_date" in new_data.columns
     assert len(new_data.load_partition_date.unique()) == 1
-    assert new_data.load_partition_date[0] == datetime.now().date()
+    assert new_data.load_partition_date[0] == datetime.now(timezone.utc).date()
 
 
-def test_query(client: Client):
-    """Test running query"""
-    with patch("duckdb.connect") as mock_connect:
-        mock_conn = MagicMock()
-        # Set up the mock to return the mock connection
-        mock_connect.return_value = mock_conn
-        # Set to None for now and we don't want to use this
-        mock_conn.execute.return_value = 123
+@pytest.mark.parametrize(
+    "dataset_refs",
+    [
+        [],
+        [FutureDatasetRef("ds1", "f_ds1", "bucket1")],
+        [FutureDatasetRef("ds1", "f_ds1", "bucket1"), FutureDatasetRef("ds2", "f_ds2", None)],
+    ],
+)
+def test_pyarrow_dataset_id_provided(client: Client, dataset_refs: list[FutureDatasetRef]):
+    """Test if client provided pyarrow dataset when required by the query"""
+    mock_query_exe = Mock()
+    mock_query_exe.parse_query.return_value = "some_query", dataset_refs
+    mock_query_exe.execute.return_value = None
+    client.query_executor = mock_query_exe
 
-        assert client.query("SELECT * FROM my_table") == 123
+    with patch("spaceship.client.Client.get_dataset") as mock_get_dataset_method:
+
+        def deltatable(name, _):
+            mock_deltatable = Mock()
+            mock_deltatable.name = name
+            mock_deltatable.to_pyarrow_dataset.return_value = name
+            return mock_deltatable
+
+        mock_get_dataset_method.side_effect = deltatable
+
+        client.query("some query")
+
+        kwargs = {ds_ref.alias: ds_ref.name for ds_ref in dataset_refs}
+
+        mock_query_exe.execute.assert_called_once_with("some_query", **kwargs)
