@@ -228,7 +228,7 @@ class Client:
         data: pd.DataFrame | pa.Table | ds.Dataset | Path | str,
         dataset_name_or_path: str,
         bucket: str | None = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Append new data to an existing dataset.
@@ -245,7 +245,7 @@ class Client:
             metadata=self.get_dataset_metadata(dataset_name_or_path, bucket),
             storage_options=self._get_storage_option() if bucket else None,
             mode="append",
-            **kwargs
+            **kwargs,
         )
 
     def query(self, query: str, delta_read_mode: Literal["pyarrow", "duckdb"] = "pyarrow", **kwargs):

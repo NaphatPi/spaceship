@@ -121,7 +121,7 @@ def parquet_file(pandas_df: pd.DataFrame, tmp_path: Path) -> str:
     """Parquet file fixture for testing. This returns the path to the file"""
     file_path = tmp_path / "test_data.parquet"
     pandas_df.to_parquet(file_path)
-    yield str(file_path)
+    return str(file_path)
 
 
 @pytest.fixture(scope="function")
@@ -129,33 +129,13 @@ def csv_file(pandas_df: pd.DataFrame, tmp_path: Path) -> str:
     """Text file fixture for testing. This returns the path to the file"""
     file_path = tmp_path / "test_data.csv"
     pandas_df.to_csv(file_path, index=False)
-    yield str(file_path)
+    return str(file_path)
 
 
 @pytest.fixture(scope="function")
 def pyarrow_dataset(parquet_file: str) -> ds.Dataset:
     """Test PyArrow dataset fixture for testing"""
     return ds.dataset(parquet_file)
-
-
-# @pytest.fixture()
-# def data(request, tmp_path):
-#     """data fixture"""
-#     param = request.param
-#     df = pd.DataFrame(
-#         {
-#             "id": [1, 2, 3, 4, 5],
-#             "name": ["Alice", "Bob", "Charlie", "David", "Eve"],
-#             "category": ["Electronics", "Clothing", "Grocery", "Electronics", "Clothing"],
-#             "date": ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-03", "2024-01-04"],
-#             "amount": [150, 85, 120, 300, 200],
-#             "city": ["New York", "San Francisco", "Chicago", "New York", "San Francisco"],
-#         }
-#     )
-
-#     if param == 'pandas_dataframe':
-#         return df
-#     elif param == ''
 
 
 @pytest.fixture(scope="function")

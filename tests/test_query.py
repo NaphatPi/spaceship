@@ -1,7 +1,6 @@
 """Module testing query.py"""
 
 import os
-from contextlib import contextmanager
 from typing import Literal
 from unittest.mock import (
     MagicMock,
