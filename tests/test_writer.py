@@ -140,7 +140,7 @@ def test_write_invalid_file_extension(tmp_path: Path, deltatable: DeltaTable, da
     path = tmp_path / "test_file.yaml"
     path.write_text("id: 1")
     with pytest.raises(ValueError):
-        write_data("", table_uri=deltatable.table_uri, metadata=dataset_metadata, mode="append")
+        write_data(path, table_uri=deltatable.table_uri, metadata=dataset_metadata, mode="append")
 
 
 def test_write_unsupported_datatype(deltatable: DeltaTable, dataset_metadata: DatasetMetadata):
