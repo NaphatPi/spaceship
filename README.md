@@ -1,14 +1,16 @@
-# spaceship
+# Spaceship
 
-## Quick start
+A Python library to provide users aiblities to easily create a dataset in [Delta Lake](https://delta.io/) format, add new data to the dataset and
+query data from it using SQL. Spaceship supports both local and cloud object storage like S3 and Digital Ocean Spaces.
+
+## Installation
 
 ```bash
-pip spaceship
+pip install git+https://github.com/NaphatPi/spaceship.git
 ```
 
-```python
-from spaceship import ...
-```
+## Quickstart
+See [quickstart jupyter notebook](/demo/quickstart.ipynb).
 
 ## For development
 

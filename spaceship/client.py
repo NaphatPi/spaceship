@@ -102,7 +102,8 @@ class Client:
                 storage_options=storage_options,
             )
             if constraints:
-                dt.alter.add_constraint(constraints)
+                for k, v in constraints.items():
+                    dt.alter.add_constraint({k: v})
         except BaseException:
             logger.exception("Failed to provision dataset %s. The following error occured", name_or_path)
             logger.info("Deleting directory that might have been partially created")
