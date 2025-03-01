@@ -85,7 +85,7 @@ jobs:
   #         /bin/bash -x run.sh test:ci
 
   execute-tests-tox:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -103,7 +103,7 @@ jobs:
           pip install ./dist/*.whl
       - name: Run tests
         run: |
-          tox
+          tox -e py$(echo ${{ matrix.python-version }} | tr -d .)
 
   publish:
     needs:
