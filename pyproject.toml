@@ -92,3 +92,17 @@ line-length = 119
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["E402"]
 "path/to/file.py" = ["E402"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py310, py311, py312, lint
+
+[testenv]
+deps = pytest
+commands = pytest
+
+[testenv:lint]
+deps = pre-commit
+commands = pre-commit run --all-files
+"""
