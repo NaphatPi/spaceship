@@ -92,18 +92,3 @@ line-length = 119
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["E402"]
 "path/to/file.py" = ["E402"]
-
-[tool.tox]
-envlist = ["py310", "py311", "py312"]
-
-[tool.tox.testenv]
-deps = ["pytest"]
-commands = ["pytest"]
-
-## With out this tox will install our package fresh everytime
-skip_install = true
-skipsdist = true
-
-## With usedevelop=true, tox will install package similar to calling "pip install -e"
-## which will make it faster but might not reflect what end user will use
-# usedevelop = true
