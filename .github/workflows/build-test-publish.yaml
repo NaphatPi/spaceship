@@ -101,11 +101,11 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install tox
+          pip install tox tox-gh-actions
           pip install ./dist/*.whl
       - name: Run tests
         run: |
-          tox -e py$(echo ${{ matrix.python-version }} | tr -d .)
+          tox
 
   publish:
     needs:
