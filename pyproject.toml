@@ -94,15 +94,16 @@ line-length = 119
 "path/to/file.py" = ["E402"]
 
 [tool.tox]
-legacy_tox_ini = """
-[tox]
-envlist = py310, py311, py312, lint
+envlist = ["py310", "py311", "py312"]
 
-[testenv]
-deps = pytest
-commands = pytest
+[tool.tox.testenv]
+deps = ["pytest"]
+commands = ["pytest"]
 
-[testenv:lint]
-deps = pre-commit
-commands = pre-commit run --all-files
-"""
+## With out this tox will install our package fresh everytime
+skip_install = true
+skipsdist = true
+
+## With usedevelop=true, tox will install package similar to calling "pip install -e"
+## which will make it faster but might not reflect what end user will use
+# usedevelop = true
