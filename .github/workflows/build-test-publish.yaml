@@ -61,16 +61,42 @@ jobs:
           name: wheel-and-sdist
           path: ./dist/*
 
-  execute-tests:
+  # execute-tests:  # This is skip since I will use tox to test for now
+  #   needs:
+  #     - build-wheel-and-sdist
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up Python 3.11
+  #       uses: actions/setup-python@v3
+  #       with:
+  #         python-version: 3.11
+  #     - name: Download wheel and sdist
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: wheel-and-sdist
+  #         path: ./dist/
+  #     - name: Install test dependencies
+  #       run: |
+  #         pip install .[test]
+  #         pip install ./dist/*.whl
+  #     - name: Run tests
+  #       run: |
+  #         /bin/bash -x run.sh test:ci
+
+  execute-tests-tox:
+    runs-on: ubuntu-latest
     needs:
       - build-wheel-and-sdist
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']  # Run tests on all versions
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
       - name: Download wheel and sdist
         uses: actions/download-artifact@v4
         with:
@@ -78,15 +104,16 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install .[test]
+          pip install tox tox-gh-actions
           pip install ./dist/*.whl
       - name: Run tests
         run: |
-          /bin/bash -x run.sh test:ci
+          tox
 
   publish:
     needs:
-      - execute-tests
+      # - execute-tests
+      - execute-tests-tox
       - build-wheel-and-sdist
       - lint-format-and-static-code-checks
       - check-version-txt
@@ -94,18 +121,18 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v3
-        with:
-          python-version: 3.11
-      - name: Download wheel and sdist
-        uses: actions/download-artifact@v4
-        with:
-          name: wheel-and-sdist
-          path: ./dist/
-      - name: Install twine
-        run: |
-          pip install twine
+      # - name: Set up Python 3.11
+      #   uses: actions/setup-python@v3
+      #   with:
+      #     python-version: 3.11
+      # - name: Download wheel and sdist
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: wheel-and-sdist
+      #     path: ./dist/
+      # - name: Install twine
+      #   run: |
+      #     pip install twine
       # - name: Publish to TestPyPI
       #   run: |
       #     /bin/bash -x run.sh publish:test

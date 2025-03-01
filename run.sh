@@ -103,6 +103,7 @@ function clean {
         -name "*cache*" \
         -o -name "*.dist-info" \
         -o -name "*.egg-info" \
+        -o -name "*.tox" \
         -o -name "*htmlcov" \
       \) \
       -not -path "*env/*" \
